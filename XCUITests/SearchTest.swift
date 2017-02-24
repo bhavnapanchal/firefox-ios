@@ -71,6 +71,7 @@ class SearchTests: BaseTestCase {
         // Verify that it is possible to enable suggestions after selecting No
         app.buttons["Cancel"].tap()
         suggestionsOnOff()
+        navigator.goto(NewTabScreen)
         typeOnSearchBar(text: "foobar")
         waitforExistence(app.tables["SiteTable"].buttons[SuggestedSite])
     }
