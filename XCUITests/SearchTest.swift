@@ -25,8 +25,6 @@ class SearchTests: BaseTestCase {
     private func suggestionsOnOff() {
         navigator.goto(SearchSettings)
         app.tables.switches["Show Search Suggestions"].tap()
-        app.navigationBars["Search"].buttons["Settings"].tap()
-        app.navigationBars["Settings"].buttons["AppSettingsTableViewController.navigationItem.leftBarButtonItem"].tap()
     }
     
     private func typeOnSearchBar(text: String) {
@@ -56,6 +54,7 @@ class SearchTests: BaseTestCase {
         // Reset suggestion button, set it to off
         app.buttons["Cancel"].tap()
         suggestionsOnOff()
+        navigator.goto(NewTabScreen)
         typeOnSearchBar(text: "foobar")
         
         // Suggestions prompt should not appear
@@ -131,19 +130,16 @@ class SearchTests: BaseTestCase {
     private func changeSearchEngine(searchEngine: String) {
         let tablesQuery2 = app.tables
         tablesQuery2.staticTexts[searchEngine].tap()
-        
-        app.navigationBars["Search"].buttons["Settings"].tap()
-        app.navigationBars["Settings"].buttons["AppSettingsTableViewController.navigationItem.leftBarButtonItem"].tap()
-        typeOnSearchBar(text: "foo\n")
-        
+    
+        navigator.openNewURL(urlString: "foo")
         waitForValueContains(app.textFields["url"], value: searchEngine.lowercased())
         
         app.buttons["TabToolbar.backButton"].tap()
-        app.buttons["TabToolbar.menuButton"].tap()
-        app.collectionViews.cells["SettingsMenuItem"].tap()
+        
+        navigator.nowAt(NewTabScreen)
+        navigator.goto(SearchSettings)
         
         // Open menu to change the search engine
-        app.tables["AppSettingsTableViewController.tableView"].staticTexts["Search"].tap()
         app.tables.staticTexts[searchEngine].tap()
     }
     
