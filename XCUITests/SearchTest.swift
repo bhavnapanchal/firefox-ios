@@ -4,8 +4,8 @@
 
 import XCTest
 
-private let LabelPrompt = "Turn on search suggestions?"
-private let SuggestedSite = "foobar2000.org"
+private let LabelPrompt: String = "Turn on search suggestions?"
+private let SuggestedSite: String = "foobar2000.org"
 
 class SearchTests: BaseTestCase {
     var navigator: Navigator!
@@ -21,16 +21,19 @@ class SearchTests: BaseTestCase {
         super.tearDown()
     }
     
+    private func typeOnSearchBar(text: String) {
+        navigator.goto(URLBarOpen)
+        app.textFields["address"].typeText(text)
+    }
+    
     private func suggestionsOnOff() {
         navigator.goto(SearchSettings)
         app.tables.switches["Show Search Suggestions"].tap()
     }
     
     func testPromptPresence() {
-        navigator.goto(NewTabScreen)
-
         // Suggestion is off by default, so the prompt should appear
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        typeOnSearchBar(text: "foobar")
         waitforExistence(app.staticTexts[LabelPrompt])
         
         // No suggestions should be shown
@@ -43,42 +46,37 @@ class SearchTests: BaseTestCase {
         waitforExistence(app.tables["SiteTable"].buttons[SuggestedSite])
         
         // Verify that previous choice is remembered
-        app.buttons["Cancel"].tap()
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        navigator.goto(NewTabScreen)
+        typeOnSearchBar(text: "foobar")
         waitforExistence(app.tables["SiteTable"].buttons[SuggestedSite])
         
         // Reset suggestion button, set it to off
-        app.buttons["Cancel"].tap()
-        suggestionsOnOff()
         navigator.goto(NewTabScreen)
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        suggestionsOnOff()
+        typeOnSearchBar(text: "foobar")
         
         // Suggestions prompt should not appear
         waitforNoExistence(app.tables["SiteTable"].buttons[SuggestedSite])
     }
     
     func testDismissPromptPresence() {
-        navigator.goto(NewTabScreen)
-
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        typeOnSearchBar(text: "foobar")
         waitforExistence(app.staticTexts[LabelPrompt])
         
         app.buttons["No"].tap()
         waitforNoExistence(app.tables["SiteTable"].buttons[SuggestedSite])
         
         // Verify that it is possible to enable suggestions after selecting No
-        app.buttons["Cancel"].tap()
+        navigator.goto(NewTabMenu)
         suggestionsOnOff()
-        navigator.goto(NewTabScreen)
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        typeOnSearchBar(text: "foobar")
+        
         waitforExistence(app.tables["SiteTable"].buttons[SuggestedSite])
     }
-    
+  
     func testDoNotShowSuggestionsWhenEnteringURL() {
-        navigator.goto(NewTabScreen)
-
         // According to bug 1192155 if a string contains /, do not show suggestions, if there a space an a string, the suggestions are shown again
-        navigator.openNewURL(urlString: "foobar", gotoURL: false)
+        typeOnSearchBar(text: "foobar")
         waitforExistence(app.staticTexts[LabelPrompt])
         
         // No suggestions should be shown
@@ -100,17 +98,13 @@ class SearchTests: BaseTestCase {
     }
     
     func testCopyPasteComplete() {
-        navigator.goto(NewTabScreen)
-
         // Copy, Paste and Go to url
-        navigator.openNewURL(urlString: "www.mozilla.org", gotoURL: false)
+        typeOnSearchBar(text: "www.mozilla.org")
         app.textFields["address"].press(forDuration: 5)
         app.menuItems["Select All"].tap()
         app.menuItems["Copy"].tap()
         
-        app.buttons["Cancel"].tap()
-        
-        app.textFields["url"].tap()
+        navigator.goto(URLBarOpen)
         app.textFields["address"].tap()
         app.menuItems["Paste"].tap()
         
@@ -123,12 +117,13 @@ class SearchTests: BaseTestCase {
         
         // Go back, write part of moz, check the autocompletion
         app.buttons["TabToolbar.backButton"].tap()
-        navigator.openNewURL(urlString: "moz", gotoURL: false)
+        navigator.nowAt(NewTabScreen)
+        typeOnSearchBar(text: "moz")
         waitForValueContains(app.textFields["address"], value: "mozilla.org")
         let value = app.textFields["address"].value
         XCTAssertEqual(value as? String, "mozilla.org/")
     }
-    
+
     private func changeSearchEngine(searchEngine: String) {
         navigator.goto(SearchSettings)
         // Open the list of default search engines and select the desired
@@ -136,7 +131,7 @@ class SearchTests: BaseTestCase {
         let tablesQuery2 = app.tables
         tablesQuery2.staticTexts[searchEngine].tap()
         
-        navigator.openNewURL(urlString: "foo")
+        navigator.openURL(urlString: "foo")
         waitForValueContains(app.textFields["url"], value: searchEngine.lowercased())
         
         // Go here so that next time it is possible to access settings
@@ -144,8 +139,6 @@ class SearchTests: BaseTestCase {
         }
     
     func testSearchEngine() {
-        navigator.goto(NewTabScreen)
-    
         // Change to the each search engine and verify the search uses it
         changeSearchEngine(searchEngine: "Bing")
         changeSearchEngine(searchEngine: "DuckDuckGo")
@@ -155,9 +148,8 @@ class SearchTests: BaseTestCase {
         changeSearchEngine(searchEngine: "Amazon.com")
         changeSearchEngine(searchEngine: "Yahoo")
     }
-
+    
     func testDefaultSearchEngine() {
-        navigator.goto(NewTabScreen)
         navigator.goto(SearchSettings)
         XCTAssert(app.tables.staticTexts["Yahoo"].exists)
     }
